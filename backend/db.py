@@ -1,3 +1,4 @@
+import numpy as np
 import duckdb
 from pathlib import Path
 
@@ -11,7 +12,7 @@ class dbWrapper:
     def load_from_csv(self, data_dir):
         data_path = Path(data_dir)
 
-        for table in ["person", "condition_occurrence", "measurement"]:
+        for table in ["person", "condition_occurrence", "measurement_mod"]:
             file = data_path / f"{table}.csv"
             if file.exists():
                 self.conn.execute(f"""
@@ -79,7 +80,7 @@ class dbWrapper:
 
         return disease_cohort, non_disease_cohort
 
-    def getMeasurements(self, view, measurement_concept_id):
+    def get_measurements(self, view, measurement_concept_id):
         placeholders = ",".join(["?"] * len(view))
         measurements = self.conn.execute(
             f"""
@@ -98,13 +99,3 @@ class dbWrapper:
         measurements = measurements.groupby("person_id").first().reset_index()
 
         return measurements[["person_id", "value_as_number"]]
-
-
-if __name__ == "__main__":
-    db = dbWrapper("omop.db")
-    disease_cohort, healthy_cohort = db.get_cohorts(443392)
-
-    measuremnent_id = 2212099
-
-    print(db.getMeasurements(healthy_cohort["person_id"].tolist(), measuremnent_id))
-    print(db.getMeasurements(disease_cohort["person_id"].tolist(), measuremnent_id))

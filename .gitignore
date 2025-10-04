@@ -1,1 +1,2 @@
-./python/data/
+backend/data/
+backend/__pycache__/

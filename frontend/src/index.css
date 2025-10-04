@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom component styles */
+@layer components {
+  /* Card/Container styles */
+  .card {
+    @apply bg-white border-4 border-gray-800 p-6;
+  }
+
+  .card-sm {
+    @apply bg-white border-4 border-gray-800 p-4;
+  }
+
+  /* Button styles */
+  .btn {
+    @apply font-bold px-3 py-2 border-2 border-gray-800;
+  }
+
+  .btn-primary {
+    @apply btn bg-gray-800 text-white hover:bg-gray-700;
+  }
+
+  .btn-secondary {
+    @apply btn bg-gray-200 hover:bg-gray-300;
+  }
+
+  .btn-full {
+    @apply btn-primary w-full;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full px-3 py-2 border-2 border-gray-800 font-bold;
+  }
+
+  /* Label styles */
+  .label {
+    @apply block text-sm font-bold mb-2;
+  }
+
+  /* Header styles */
+  .section-header {
+    @apply text-lg font-bold mb-4 border-b-2 border-gray-800 pb-2;
+  }
+
+  /* Table styles */
+  .stats-table {
+    @apply w-full text-sm border-2 border-gray-800;
+  }
+
+  .stats-table tr {
+    @apply border-b-2 border-gray-800;
+  }
+
+  .stats-table tr:last-child {
+    @apply border-b-0;
+  }
+
+  .stats-table td {
+    @apply py-2 px-2 font-bold;
+  }
+
+  /* Auth container */
+  .auth-container {
+    @apply min-h-screen bg-gray-200 flex items-center justify-center p-4;
+  }
+
+  .auth-card {
+    @apply bg-white border-4 border-gray-800 p-8 max-w-md w-full;
+  }
+
+  /* Tab buttons */
+  .tab-group {
+    @apply flex border-2 border-gray-800;
+  }
+
+  .tab {
+    @apply flex-1 py-2 font-bold;
+  }
+
+  .tab-active {
+    @apply tab bg-gray-800 text-white;
+  }
+
+  .tab-inactive {
+    @apply tab bg-gray-200;
+  }
+}
