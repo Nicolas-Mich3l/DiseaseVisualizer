@@ -4,13 +4,12 @@ from db import dbWrapper
 import numpy as np
 
 app = Flask(__name__)
-
 CORS(app)
-
 
 db = None
 
 
+# lazy load DB to not have flask crash during bootup
 def get_db():
     global db
     if db is None:
@@ -27,10 +26,7 @@ def calculate_stats(values):
         return {"n": 0, "median": None, "p25": None, "p75": None, "mean": None}
 
     # Remove None/NaN values
-    print("vals", type(values[0]))
     clean_values = [float(v) for v in values if type(v) is str or type(v) is float]
-    print(clean_values)
-
     if len(clean_values) == 0:
         return {"n": 0, "median": None, "p25": None, "p75": None, "mean": None}
 
@@ -109,7 +105,6 @@ def get_cohort():
                 "healthy": healthy_cohort.to_dict(orient="records"),
             }
         )
-        print(out)
         return out
 
     except Exception as e:
@@ -139,7 +134,6 @@ def get_cohort_full():
             "healthy": healthy_cohort.to_dict(orient="records"),
         }
 
-        # If measurement_id provided, include stats
         if measurement_id:
             measurement_id = int(measurement_id)
             # Get measurementsds
@@ -153,7 +147,6 @@ def get_cohort_full():
             # Calculate statistics
             disease_values = disease_measurements["value_as_number"].tolist()
             healthy_values = healthy_measurements["value_as_number"].tolist()
-
             response["diseaseStats"] = calculate_stats(disease_values)
             response["healthyStats"] = calculate_stats(healthy_values)
             response["diseaseMeasurments"] = disease_values
@@ -166,4 +159,4 @@ def get_cohort_full():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)

@@ -22,8 +22,8 @@ const App = () => {
   ];
 
   const measurements = [
-    { id: "3000963", name: "Hemoglobin [Mass/volume] in Blood" },
-    { id: "3004501", name: "Glucose [Mass/volume] in Serum or Plasma" },
+    { id: "3000963", name: "Hemoglobin in Blood" },
+    { id: "3004501", name: "Glucose in Serum or Plasma" },
     { id: "3012888", name: "Diastolic blood pressure" },
     { id: "3004249", name: "Systolic blood pressure" },
     { id: "2212095", name: "Lipid Panel" },
@@ -44,17 +44,15 @@ const App = () => {
 
   const buildCohorts = async () => {
     setLoading(true);
+    setCohortData(null);
     try {
       const data = await fetchCohortFull(selectedDisease, selectedMeasurement);
 
       // Get measurement values for box plot
       const diseaseValues = data.diseaseMeasurments
-        .map((d) => Math.floor(d))
-        .filter((v) => v !== null);
-
+        .map((d) => Math.floor(d));
       const healthyValues = data.healthyMeasurements
-        .map((d) => Math.floor(d))
-        .filter((v) => v !== null);
+        .map((d) => Math.floor(d));
 
       const ageSexData = groupByAgeAndSex().transform(
         data.disease,
@@ -81,10 +79,6 @@ const App = () => {
       console.error(err);
     }
     setLoading(false);
-  };
-
-  const exportChart = (chartId, format) => {
-    alert(`Exporting ${chartId} as ${format.toUpperCase()}`);
   };
 
   // Auth Screen - Password Reset
@@ -271,6 +265,7 @@ const App = () => {
                 <h3 className="text-lg font-bold mb-4">
                   Age Group & Sex Distribution
                 </h3>
+                <p>(select a section of graph to zoom)</p>
                 <Plot
                   data={[
                     {
@@ -390,8 +385,9 @@ const App = () => {
                         <p className="text-sm text-gray-500">
                           No measurements found for the selected cohorts and
                           measurement type. The value_as_number field of AWS
-                          OMOP data is empty. sdf lipid measurment is generated
-                          by a script as runtime to demo visualizations.
+                          OMOP data is empty. Lipid measurment data is generated
+                          by a script during intialization and inserted into the
+                          DB to demo visualizations.
                         </p>
                       </div>
                     </div>

@@ -1,0 +1,22 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  omop-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ndam1101/omop-visualizer:latest
+    ports:
+      - "8000:3000"  # Frontend (Vite dev server)
+      - "5001:5000"  # Backend (Flask)
+    volumes:
+      - ./backend/data:/app/backend/data
+      - ./backend/omop.db:/app/backend/omop.db
+    environment:
+      - FLASK_ENV=development
+      - PYTHONUNBUFFERED=1
+      - VITE_API_URL=http://localhost:5001
+    stdin_open: true
+    tty: true
+    command: /app/start.sh

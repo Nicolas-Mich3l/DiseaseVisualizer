@@ -11,24 +11,6 @@ def generate_lipid_values_by_cohort(
 ):
     """
     Generates distinct-ish Lipid Panel distributions for disease vs non-disease cohorts.
-
-    Disease cohort (e.g., Diabetes patients):
-        - Mean: 240 mg/dL (elevated cholesterol, common in diabetes)
-        - Std Dev: 45 mg/dL
-        - Range: 150-400 mg/dL
-
-    Non-disease cohort (healthy):
-        - Mean: 180 mg/dL (normal cholesterol)
-        - Std Dev: 30 mg/dL
-        - Range: 100-300 mg/dL
-
-    Args:
-        data_dir: Directory containing CSV files
-        disease_concept_id: OMOP concept_id for the disease condition
-        output_dir: Output directory (defaults to data_dir if None)
-
-    Returns:
-        Updated measurement DataFrame
     """
 
     LIPID_PANEL_CONCEPT_ID = 2212095
@@ -37,24 +19,21 @@ def generate_lipid_values_by_cohort(
 
     # Disease cohort configuration (elevated lipids)
     disease_config = {
-        "mean": 240,  # mg/dL - elevated cholesterol
-        "std": 45,  # mg/dL - higher variation
-        "min": 150,  # mg/dL
-        "max": 400,  # mg/dL
+        "mean": 240,
+        "std": 45,
+        "min": 150,
+        "max": 400,
         "name": "Disease Cohort (Elevated Lipids)",
     }
 
     # Non-disease cohort configuration (normal lipids)
     healthy_config = {
-        "mean": 180,  # mg/dL - normal cholesterol
-        "std": 30,  # mg/dL - lower variation
-        "min": 100,  # mg/dL
-        "max": 300,  # mg/dL
+        "mean": 180,
+        "std": 30,
+        "min": 100,
+        "max": 300,
         "name": "Non-Disease Cohort (Normal Lipids)",
     }
-
-    # Step 1: Read CSV files
-    print("Step 1: Reading CSV files...")
 
     measurement_file = data_path / "measurement.csv"
     condition_file = data_path / "condition_occurrence.csv"
@@ -91,14 +70,13 @@ def generate_lipid_values_by_cohort(
 
     print(f" Found {len(lipid_measurements):,} lipid panel measurements")
 
-    # Separate into disease and non-disease measurements
     disease_lipid_mask = lipid_measurements["person_id"].isin(disease_persons)
     healthy_lipid_mask = lipid_measurements["person_id"].isin(healthy_persons)
 
     disease_lipid_count = disease_lipid_mask.sum()
     healthy_lipid_count = healthy_lipid_mask.sum()
 
-    # Generate disease cohort values (elevated lipids)
+    # Generate unhealthy cohort values
     if disease_lipid_count > 0:
         disease_values = np.random.normal(
             loc=disease_config["mean"],
@@ -109,11 +87,10 @@ def generate_lipid_values_by_cohort(
             disease_values, disease_config["min"], disease_config["max"]
         )
 
-        # Update disease cohort measurements
         disease_indices = lipid_measurements[disease_lipid_mask].index
         measurements.loc[disease_indices, "value_as_number"] = disease_values
 
-    # Generate healthy cohort values (normal lipids)
+    # Generate healthy cohort values
     if healthy_lipid_count > 0:
         healthy_values = np.random.normal(
             loc=healthy_config["mean"],
@@ -123,8 +100,6 @@ def generate_lipid_values_by_cohort(
         healthy_values = np.clip(
             healthy_values, healthy_config["min"], healthy_config["max"]
         )
-
-        # Update healthy cohort measurements
         healthy_indices = lipid_measurements[healthy_lipid_mask].index
         measurements.loc[healthy_indices, "value_as_number"] = healthy_values
 
@@ -141,8 +116,9 @@ def generate_lipid_values_by_cohort(
 def main():
     """Entry point for command-line usage."""
     if len(sys.argv) < 2:
-        print("Usage: python generate_lipid_values.py <data_dir> <output_dir>")
-        print("  python generate_lipid_values.py ./data/100k/  ./data/100k_updated/")
+        print(
+            "Usage: python generate_lipid_values.py <data_dir> <OMOP Concept ID for condition to generate around>"
+        )
         sys.exit(1)
 
     data_dir = sys.argv[1]
