@@ -1,14 +1,5 @@
 import React, { useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import Plot from "react-plotly.js";
 import { fetchCohortFull, groupByAgeAndSex } from "./utils/cohortAPI.js";
 
 const App = () => {
@@ -55,15 +46,35 @@ const App = () => {
     setLoading(true);
     try {
       const data = await fetchCohortFull(selectedDisease, selectedMeasurement);
+
+      // Get measurement values for box plot
+      const diseaseValues = data.diseaseMeasurments
+        .map((d) => Math.floor(d))
+        .filter((v) => v !== null);
+
+      const healthyValues = data.healthyMeasurements
+        .map((d) => Math.floor(d))
+        .filter((v) => v !== null);
+
       const ageSexData = groupByAgeAndSex().transform(
         data.disease,
         data.healthy,
+      );
+
+      const selectedMeasurementInfo = measurements.find((m) =>
+        m.id === selectedMeasurement
       );
 
       setCohortData({
         ageSexData,
         diseaseStats: data.diseaseStats,
         nonDiseaseStats: data.healthyStats,
+        diseaseValues,
+        healthyValues,
+        diseaseCount: data.disease.length,
+        healthyCount: data.healthy.length,
+        measurementName: selectedMeasurementInfo?.name || "Measurement",
+        measurementUnit: selectedMeasurementInfo?.unit || "units",
       });
     } catch (err) {
       alert("Error loading cohort data");
@@ -242,14 +253,14 @@ const App = () => {
                 <div className="card">
                   <h3 className="text-lg font-bold mb-2">Disease Cohort</h3>
                   <p className="text-4xl font-bold">
-                    {cohortData.diseaseStats.n}
+                    {cohortData.diseaseCount}
                   </p>
                   <p className="text-sm font-bold text-gray-600">patients</p>
                 </div>
                 <div className="card">
                   <h3 className="text-lg font-bold mb-2">Non-Disease Cohort</h3>
                   <p className="text-4xl font-bold">
-                    {cohortData.nonDiseaseStats.n}
+                    {cohortData.healthyCount}
                   </p>
                   <p className="text-sm font-bold text-gray-600">patients</p>
                 </div>
@@ -257,157 +268,226 @@ const App = () => {
 
               {/* Age/Sex Distribution */}
               <div className="card mb-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold">
-                    Age Group & Sex Distribution
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => exportChart("age-sex", "png")}
-                      className="btn-primary text-sm"
-                    >
-                      PNG
-                    </button>
-                    <button
-                      onClick={() => exportChart("age-sex", "pdf")}
-                      className="btn-primary text-sm"
-                    >
-                      PDF
-                    </button>
-                  </div>
-                </div>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={cohortData.ageSexData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="age" />
-                    <YAxis
-                      label={{
-                        value: "Count",
-                        angle: -90,
-                        position: "insideLeft",
-                      }}
-                    />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="Disease-Male" fill="#3b82f6" />
-                    <Bar dataKey="Disease-Female" fill="#93c5fd" />
-                    <Bar dataKey="Non-Disease-Male" fill="#10b981" />
-                    <Bar dataKey="Non-Disease-Female" fill="#6ee7b7" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <h3 className="text-lg font-bold mb-4">
+                  Age Group & Sex Distribution
+                </h3>
+                <Plot
+                  data={[
+                    {
+                      x: cohortData.ageSexData.map((d) => d.age),
+                      y: cohortData.ageSexData.map((d) => d["Disease-Male"]),
+                      name: "Disease-Male",
+                      type: "bar",
+                      marker: { color: "#3b82f6" },
+                    },
+                    {
+                      x: cohortData.ageSexData.map((d) => d.age),
+                      y: cohortData.ageSexData.map((d) => d["Disease-Female"]),
+                      name: "Disease-Female",
+                      type: "bar",
+                      marker: { color: "#93c5fd" },
+                    },
+                    {
+                      x: cohortData.ageSexData.map((d) => d.age),
+                      y: cohortData.ageSexData.map((d) =>
+                        d["Non-Disease-Male"]
+                      ),
+                      name: "Non-Disease-Male",
+                      type: "bar",
+                      marker: { color: "#10b981" },
+                    },
+                    {
+                      x: cohortData.ageSexData.map((d) => d.age),
+                      y: cohortData.ageSexData.map((d) =>
+                        d["Non-Disease-Female"]
+                      ),
+                      name: "Non-Disease-Female",
+                      type: "bar",
+                      marker: { color: "#6ee7b7" },
+                    },
+                  ]}
+                  layout={{
+                    barmode: "group",
+                    xaxis: { title: "Age Group" },
+                    yaxis: { title: "Count" },
+                    height: 400,
+                    margin: { t: 20, b: 50, l: 60, r: 20 },
+                    font: { family: "Arial, sans-serif", size: 12 },
+                  }}
+                  config={{
+                    displayModeBar: true,
+                    displaylogo: false,
+                    modeBarButtonsToRemove: ["pan2d", "lasso2d", "select2d"],
+                    toImageButtonOptions: {
+                      format: "png",
+                      filename: "age-sex-distribution",
+                      height: 600,
+                      width: 1000,
+                      scale: 2,
+                    },
+                  }}
+                  style={{ width: "100%" }}
+                />
               </div>
 
-              {/* Measurement Comparison */}
+              {/* Box Plot Comparison */}
               <div className="card mb-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-bold">
-                    {cohortData.measurementName} Comparison
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => exportChart("boxplot", "png")}
-                      className="btn-primary text-sm"
-                    >
-                      PNG
-                    </button>
-                    <button
-                      onClick={() => exportChart("boxplot", "pdf")}
-                      className="btn-primary text-sm"
-                    >
-                      PDF
-                    </button>
-                  </div>
-                </div>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart
-                    data={[
-                      {
-                        name: "Disease",
-                        value: parseFloat(cohortData.diseaseStats.median),
-                      },
-                      {
-                        name: "Non-Disease",
-                        value: parseFloat(cohortData.nonDiseaseStats.median),
-                      },
-                    ]}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis
-                      label={{
-                        value: cohortData.measurementUnit,
-                        angle: -90,
-                        position: "insideLeft",
+                <h3 className="text-lg font-bold mb-4">
+                  {cohortData.measurementName} Comparison (Box Plot)
+                </h3>
+                {cohortData.diseaseValues.length > 0 ||
+                    cohortData.healthyValues.length > 0
+                  ? (
+                    <Plot
+                      data={[
+                        {
+                          y: cohortData.diseaseValues,
+                          name: "Disease",
+                          type: "box",
+                          marker: { color: "#ef4444" },
+                          boxmean: "sd",
+                        },
+                        {
+                          y: cohortData.healthyValues,
+                          name: "Non-Disease",
+                          type: "box",
+                          marker: { color: "#3b82f6" },
+                          boxmean: "sd",
+                        },
+                      ]}
+                      layout={{
+                        yaxis: { title: cohortData.measurementUnit },
+                        height: 400,
+                        margin: { t: 20, b: 50, l: 60, r: 20 },
+                        font: { family: "Arial, sans-serif", size: 12 },
+                        showlegend: true,
                       }}
+                      config={{
+                        displayModeBar: true,
+                        displaylogo: false,
+                        modeBarButtonsToRemove: [
+                          "pan2d",
+                          "lasso2d",
+                          "select2d",
+                        ],
+                        toImageButtonOptions: {
+                          format: "png",
+                          filename: "measurement-boxplot",
+                          height: 600,
+                          width: 1000,
+                          scale: 2,
+                        },
+                      }}
+                      style={{ width: "100%" }}
                     />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
+                  )
+                  : (
+                    <div className="flex items-center justify-center h-96">
+                      <div className="text-center">
+                        <p className="text-xl font-bold text-gray-600 mb-2">
+                          No Measurement Data Available
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          No measurements found for the selected cohorts and
+                          measurement type. The value_as_number field of AWS
+                          OMOP data is empty. sdf lipid measurment is generated
+                          by a script as runtime to demo visualizations.
+                        </p>
+                      </div>
+                    </div>
+                  )}
               </div>
 
               {/* Summary Statistics */}
-              <div className="card">
-                <h3 className="section-header">Summary Statistics</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-bold mb-2 text-lg">Disease Cohort</h4>
-                    <table className="stats-table">
-                      <tbody>
-                        <tr>
-                          <td>n:</td>
-                          <td>{cohortData.diseaseStats.n}</td>
-                        </tr>
-                        <tr>
-                          <td>Median:</td>
-                          <td>{cohortData.diseaseStats.median}</td>
-                        </tr>
-                        <tr>
-                          <td>P25:</td>
-                          <td>{cohortData.diseaseStats.p25}</td>
-                        </tr>
-                        <tr>
-                          <td>P75:</td>
-                          <td>{cohortData.diseaseStats.p75}</td>
-                        </tr>
-                        <tr>
-                          <td>Mean:</td>
-                          <td>{cohortData.diseaseStats.mean}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div>
-                    <h4 className="font-bold mb-2 text-lg">
-                      Non-Disease Cohort
-                    </h4>
-                    <table className="stats-table">
-                      <tbody>
-                        <tr>
-                          <td>n:</td>
-                          <td>{cohortData.nonDiseaseStats.n}</td>
-                        </tr>
-                        <tr>
-                          <td>Median:</td>
-                          <td>{cohortData.nonDiseaseStats.median}</td>
-                        </tr>
-                        <tr>
-                          <td>P25:</td>
-                          <td>{cohortData.nonDiseaseStats.p25}</td>
-                        </tr>
-                        <tr>
-                          <td>P75:</td>
-                          <td>{cohortData.nonDiseaseStats.p75}</td>
-                        </tr>
-                        <tr>
-                          <td>Mean:</td>
-                          <td>{cohortData.nonDiseaseStats.mean}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+              {(cohortData.diseaseStats.n > 0 ||
+                cohortData.nonDiseaseStats.n > 0) && (
+                <div className="card">
+                  <h3 className="section-header">
+                    Measurment Statistics Summary
+                  </h3>
+                  <div className="grid grid-cols-2 gap-6">
+                    {cohortData.diseaseStats.n > 0
+                      ? (
+                        <div>
+                          <h4 className="font-bold mb-2 text-lg">
+                            Disease Cohort
+                          </h4>
+                          <table className="stats-table">
+                            <tbody>
+                              <tr>
+                                <td>n:</td>
+                                <td>{cohortData.diseaseStats.n}</td>
+                              </tr>
+                              <tr>
+                                <td>Median:</td>
+                                <td>{cohortData.diseaseStats.median}</td>
+                              </tr>
+                              <tr>
+                                <td>P25:</td>
+                                <td>{cohortData.diseaseStats.p25}</td>
+                              </tr>
+                              <tr>
+                                <td>P75:</td>
+                                <td>{cohortData.diseaseStats.p75}</td>
+                              </tr>
+                              <tr>
+                                <td>Mean:</td>
+                                <td>{cohortData.diseaseStats.mean}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      )
+                      : (
+                        <div className="flex items-center justify-center">
+                          <p className="text-gray-500 italic">
+                            No measurement data available
+                          </p>
+                        </div>
+                      )}
+
+                    {cohortData.nonDiseaseStats.n > 0
+                      ? (
+                        <div>
+                          <h4 className="font-bold mb-2 text-lg">
+                            Non-Disease Cohort
+                          </h4>
+                          <table className="stats-table">
+                            <tbody>
+                              <tr>
+                                <td>n:</td>
+                                <td>{cohortData.nonDiseaseStats.n}</td>
+                              </tr>
+                              <tr>
+                                <td>Median:</td>
+                                <td>{cohortData.nonDiseaseStats.median}</td>
+                              </tr>
+                              <tr>
+                                <td>P25:</td>
+                                <td>{cohortData.nonDiseaseStats.p25}</td>
+                              </tr>
+                              <tr>
+                                <td>P75:</td>
+                                <td>{cohortData.nonDiseaseStats.p75}</td>
+                              </tr>
+                              <tr>
+                                <td>Mean:</td>
+                                <td>{cohortData.nonDiseaseStats.mean}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      )
+                      : (
+                        <div className="flex items-center justify-center">
+                          <p className="text-gray-500 italic">
+                            No measurement data available
+                          </p>
+                        </div>
+                      )}
                   </div>
                 </div>
-              </div>
+              )}
             </>
           )
           : (

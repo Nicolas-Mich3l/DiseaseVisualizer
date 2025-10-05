@@ -21,7 +21,7 @@ export async function fetchCohortData(diseaseId) {
  * Fetch cohort data with measurements and stats
  * @param {string} diseaseId - Disease concept ID
  * @param {string} measurementId - Measurement concept ID
- * @returns {Promise<{disease: Array, healthy: Array, diseaseStats: Object, healthyStats: Object}>}
+ * @returns {Promise<{disease: Array, healthy: Array, diseaseStats: Object, healthyStats: Object, diseaseMeasurments: Array, healthyMeasurments: Array}>}
  */
 export async function fetchCohortFull(diseaseId, measurementId) {
   const url = measurementId

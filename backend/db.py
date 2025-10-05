@@ -12,7 +12,7 @@ class dbWrapper:
     def load_from_csv(self, data_dir):
         data_path = Path(data_dir)
 
-        for table in ["person", "condition_occurrence", "measurement_mod"]:
+        for table in ["person", "condition_occurrence", "measurement"]:
             file = data_path / f"{table}.csv"
             if file.exists():
                 self.conn.execute(f"""

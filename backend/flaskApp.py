@@ -5,7 +5,7 @@ import numpy as np
 
 app = Flask(__name__)
 
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:3001"}})
+CORS(app)
 
 
 db = None
@@ -27,7 +27,8 @@ def calculate_stats(values):
         return {"n": 0, "median": None, "p25": None, "p75": None, "mean": None}
 
     # Remove None/NaN values
-    clean_values = [float(v) for v in values if type(v) is str]
+    print("vals", type(values[0]))
+    clean_values = [float(v) for v in values if type(v) is str or type(v) is float]
     print(clean_values)
 
     if len(clean_values) == 0:
@@ -133,7 +134,6 @@ def get_cohort_full():
 
         # Get cohorts
         disease_cohort, healthy_cohort = db_instance.get_cohorts(disease_id)
-
         response = {
             "disease": disease_cohort.to_dict(orient="records"),
             "healthy": healthy_cohort.to_dict(orient="records"),
@@ -142,12 +142,10 @@ def get_cohort_full():
         # If measurement_id provided, include stats
         if measurement_id:
             measurement_id = int(measurement_id)
-
             # Get measurementsds
             disease_measurements = db_instance.get_measurements(
                 disease_cohort["person_id"].tolist(), measurement_id
             )
-
             healthy_measurements = db_instance.get_measurements(
                 healthy_cohort["person_id"].tolist(), measurement_id
             )
@@ -156,12 +154,10 @@ def get_cohort_full():
             disease_values = disease_measurements["value_as_number"].tolist()
             healthy_values = healthy_measurements["value_as_number"].tolist()
 
-            print(disease_values)
-
             response["diseaseStats"] = calculate_stats(disease_values)
             response["healthyStats"] = calculate_stats(healthy_values)
-
-            print(response["diseaseStats"])
+            response["diseaseMeasurments"] = disease_values
+            response["healthyMeasurements"] = healthy_values
 
         return jsonify(response)
 
